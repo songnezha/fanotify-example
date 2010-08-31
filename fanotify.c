@@ -215,6 +215,7 @@ int main(int argc, char *argv[])
 			}
 
 			printf("\n");
+			fflush(stdout);
 
 			if (metadata->fd >= 0 && close(metadata->fd) != 0)
 				goto fail;
