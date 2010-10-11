@@ -58,7 +58,8 @@ void synopsis(const char *progname, int status)
 		"-h: this help screen\n"
 		"-m: place mark on the whole mount point, not just the inode\n"
 		"-n: do not ignore repeated permission checks\n"
-		"-p: check permissions, not just notification\n",
+		"-p: check permissions, not just notification\n"
+		"-s N: sleep N seconds before replying to perm events\n",
 		progname);
 	exit(status);
 }
@@ -70,6 +71,7 @@ int main(int argc, char *argv[])
 	uint64_t fan_mask = FAN_OPEN | FAN_CLOSE | FAN_ACCESS | FAN_MODIFY;
 	unsigned int mark_flags = FAN_MARK_ADD;
 	bool opt_child, opt_on_mount, opt_add_perms, opt_fast, opt_ignore_perm;
+	int opt_sleep;
 	ssize_t len;
 	char buf[4096];
 	fd_set rfds;
@@ -77,8 +79,9 @@ int main(int argc, char *argv[])
 
 	opt_child = opt_on_mount = opt_add_perms = opt_fast = false;
 	opt_ignore_perm = true;
+	opt_sleep = 0;
 
-	while ((opt = getopt(argc, argv, "o:"FANOTIFY_ARGUMENTS)) != -1) {
+	while ((opt = getopt(argc, argv, "o:s:"FANOTIFY_ARGUMENTS)) != -1) {
 		switch(opt) {
 			case 'o': {
 				char *str, *tok;
@@ -120,6 +123,9 @@ int main(int argc, char *argv[])
 				break;
 			case 'p':
 				opt_add_perms = true;
+				break;
+			case 's':
+				opt_sleep = atoi(optarg);
 				break;
 			case 'h':
 				synopsis(argv[0], 0);
@@ -196,6 +202,9 @@ int main(int argc, char *argv[])
 			if (metadata->mask & FAN_ACCESS_PERM)
 				printf(" access_perm");
 			if (metadata->mask & FAN_ALL_PERM_EVENTS) {
+				if (opt_sleep)
+					sleep(opt_sleep);
+
 				if (handle_perm(fan_fd, metadata))
 					goto fail;
 				if (metadata->fd >= 0 &&
