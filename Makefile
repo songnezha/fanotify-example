@@ -10,4 +10,4 @@ fanotify: fanotify.o
 fanotify.c: $(KERNEL_SOURCE)/include/linux/fanotify.h fanotify-syscalllib.h
 
 clean:
-	rm -f fanotify fanotify.o fanotify-syscalllib.o
+	rm -f fanotify fanotify.o *.orig *.rej
