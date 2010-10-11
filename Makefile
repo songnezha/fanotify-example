@@ -1,10 +1,8 @@
 KERNEL_SOURCE := /lib/modules/$(shell uname -r)/source/usr
 
-CC := gcc
-CFLAGS := -g -Wall -W -O0 -I$(KERNEL_SOURCE)/include -D_GNU_SOURCE -DWITH_PID -DX86_64
-LDFLAGS := -g -Wall -W
-#CFLAGS := -g -Wall -m32 -W -O0 -I$(KERNEL_SOURCE)/include -D_GNU_SOURCE -DWITH_PID
-#LDFLAGS := -g -Wall -W -m32
+CPPFLAGS := -I$(KERNEL_SOURCE)/include -D_GNU_SOURCE
+CFLAGS := -g -Wall -W -Wextra -O2
+LDFLAGS := $(CFLAGS)
 
 all: fanotify
 

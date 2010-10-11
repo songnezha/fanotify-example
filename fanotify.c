@@ -152,7 +152,8 @@ int main(int argc, char *argv[])
 		metadata = (void *)buf;
 		while(FAN_EVENT_OK(metadata, len)) {
 			if (opt_fast) {
-				ret = set_ignored_mask(fan_fd, metadata->fd, FAN_ALL_EVENTS | FAN_ALL_PERM_EVENTS);
+				ret = set_ignored_mask(fan_fd, metadata->fd,
+					       	       FAN_ALL_EVENTS | FAN_ALL_PERM_EVENTS);
 				if (ret)
 					goto fail;
 			}
@@ -170,9 +171,7 @@ int main(int argc, char *argv[])
 			} else
 				printf("?:");
 
-#if WITH_PID
 			printf(" pid=%ld", (long)metadata->pid);
-#endif
 
 			if (metadata->mask & FAN_ACCESS)
 				printf(" access");
@@ -193,7 +192,8 @@ int main(int argc, char *argv[])
 			if (metadata->mask & FAN_ALL_PERM_EVENTS) {
 				if (handle_perm(fan_fd, metadata))
 					goto fail;
-				if (!opt_fast && set_ignored_mask(fan_fd, metadata->fd, metadata->mask))
+				if (!opt_fast && set_ignored_mask(fan_fd, metadata->fd,
+						       		  metadata->mask))
 					goto fail;
 			}
 

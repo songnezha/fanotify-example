@@ -1,15 +1,15 @@
-#include <linux/types.h>
 #include <unistd.h>
-#include <sys/syscall.h>   /* For SYS_xxx definitions */
 
 #include "fanotify-syscalllib.h"
 
-#ifdef X86_64
-#define __NR_fanotify_init	300
-#define __NR_fanotify_mark	301
+#if defined(__x86_64__)
+# define __NR_fanotify_init	300
+# define __NR_fanotify_mark	301
+#elif defined(__i386__)
+# define __NR_fanotify_init	338
+# define __NR_fanotify_mark	339
 #else
-#define __NR_fanotify_init	338
-#define __NR_fanotify_mark	339
+# error "System call numbers not defined for this architecture"
 #endif
 
 int fanotify_init(unsigned int flags, unsigned int event_f_flags)
