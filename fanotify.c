@@ -164,6 +164,11 @@ int main(int argc, char *argv[])
 
 		metadata = (void *)buf;
 		while(FAN_EVENT_OK(metadata, len)) {
+			if (metadata->vers < 2) {
+				fprintf(stderr, "Kernel fanotify version too old\n");
+				goto fail;
+			}
+
 			if (metadata->fd >= 0 &&
 			    opt_fast &&
 			    set_ignored_mask(fan_fd, metadata->fd,
