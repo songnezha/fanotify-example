@@ -17,7 +17,7 @@
 
 #include "fanotify-syscalllib.h"
 
-#define FANOTIFY_ARGUMENTS "cfhmp"
+#define FANOTIFY_ARGUMENTS "cfhmnp"
 
 int mark_object(int fan_fd, const char *path, int fd, uint64_t mask, unsigned int flags)
 {
@@ -57,6 +57,7 @@ void synopsis(const char *progname, int status)
 		"-f: set premptive ignores (go faster)\n"
 		"-h: this help screen\n"
 		"-m: place mark on the whole mount point, not just the inode\n"
+		"-n: do not ignore repeated permission checks\n"
 		"-p: check permissions, not just notification\n",
 		progname);
 	exit(status);
@@ -64,17 +65,18 @@ void synopsis(const char *progname, int status)
 
 int main(int argc, char *argv[])
 {
-	int opt, ret;
+	int opt;
 	int fan_fd;
 	uint64_t fan_mask = FAN_OPEN | FAN_CLOSE | FAN_ACCESS | FAN_MODIFY;
 	unsigned int mark_flags = FAN_MARK_ADD;
-	bool opt_child, opt_on_mount, opt_add_perms, opt_fast;
+	bool opt_child, opt_on_mount, opt_add_perms, opt_fast, opt_ignore_perm;
 	ssize_t len;
 	char buf[4096];
 	fd_set rfds;
 
 
 	opt_child = opt_on_mount = opt_add_perms = opt_fast = false;
+	opt_ignore_perm = true;
 
 	while ((opt = getopt(argc, argv, "o:"FANOTIFY_ARGUMENTS)) != -1) {
 		switch(opt) {
@@ -107,9 +109,14 @@ int main(int argc, char *argv[])
 				break;
 			case 'f':
 				opt_fast = true;
+				opt_ignore_perm = true;
 				break;
 			case 'm':
 				opt_on_mount = true;
+				break;
+			case 'n':
+				opt_fast = false;
+				opt_ignore_perm = false;
 				break;
 			case 'p':
 				opt_add_perms = true;
@@ -151,12 +158,11 @@ int main(int argc, char *argv[])
 
 		metadata = (void *)buf;
 		while(FAN_EVENT_OK(metadata, len)) {
-			if (opt_fast) {
-				ret = set_ignored_mask(fan_fd, metadata->fd,
-					       	       FAN_ALL_EVENTS | FAN_ALL_PERM_EVENTS);
-				if (ret)
-					goto fail;
-			}
+			if (metadata->fd >= 0 &&
+			    opt_fast &&
+			    set_ignored_mask(fan_fd, metadata->fd,
+					     FAN_ALL_EVENTS | FAN_ALL_PERM_EVENTS))
+				goto fail;
 
 			if (metadata->fd >= 0) {
 				char path[PATH_MAX];
@@ -192,8 +198,10 @@ int main(int argc, char *argv[])
 			if (metadata->mask & FAN_ALL_PERM_EVENTS) {
 				if (handle_perm(fan_fd, metadata))
 					goto fail;
-				if (!opt_fast && set_ignored_mask(fan_fd, metadata->fd,
-						       		  metadata->mask))
+				if (metadata->fd >= 0 &&
+				    opt_ignore_perm &&
+				    set_ignored_mask(fan_fd, metadata->fd,
+						     metadata->mask))
 					goto fail;
 			}
 
