@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 	int opt;
 	int fan_fd;
 	uint64_t fan_mask = FAN_OPEN | FAN_CLOSE | FAN_ACCESS | FAN_MODIFY;
-	unsigned int mark_flags = FAN_MARK_ADD;
+	unsigned int mark_flags = FAN_MARK_ADD, init_flags = 0;
 	bool opt_child, opt_on_mount, opt_add_perms, opt_fast, opt_ignore_perm;
 	int opt_sleep;
 	ssize_t len;
@@ -145,7 +145,12 @@ int main(int argc, char *argv[])
 	if (opt_add_perms)
 		fan_mask |= FAN_ALL_PERM_EVENTS;
 
-	fan_fd = fanotify_init(0, O_RDONLY | O_LARGEFILE);
+	if (fan_mask & FAN_ALL_PERM_EVENTS)
+		init_flags |= FAN_CLASS_CONTENT;
+	else
+		init_flags |= FAN_CLASS_NOTIF;
+
+	fan_fd = fanotify_init(init_flags, O_RDONLY | O_LARGEFILE);
 	if (fan_fd < 0)
 		goto fail;
 
