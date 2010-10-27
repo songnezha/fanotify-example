@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <fcntl.h>
 #include <linux/limits.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +19,15 @@
 #include "fanotify-syscalllib.h"
 
 #define FANOTIFY_ARGUMENTS "cfhmnp"
+
+int fan_fd;
+
+static void usr1_handler(int sig __attribute__((unused)),
+			 siginfo_t *si __attribute__((unused)),
+			 void *unused __attribute__((unused)))
+{
+	fanotify_mark(fan_fd, FAN_MARK_FLUSH, 0, 0, NULL);
+}
 
 int mark_object(int fan_fd, const char *path, int fd, uint64_t mask, unsigned int flags)
 {
@@ -67,7 +77,6 @@ void synopsis(const char *progname, int status)
 int main(int argc, char *argv[])
 {
 	int opt;
-	int fan_fd;
 	uint64_t fan_mask = FAN_OPEN | FAN_CLOSE | FAN_ACCESS | FAN_MODIFY;
 	unsigned int mark_flags = FAN_MARK_ADD, init_flags = 0;
 	bool opt_child, opt_on_mount, opt_add_perms, opt_fast, opt_ignore_perm;
@@ -75,7 +84,13 @@ int main(int argc, char *argv[])
 	ssize_t len;
 	char buf[4096];
 	fd_set rfds;
+	struct sigaction sa;
 
+	sa.sa_flags = SA_SIGINFO | SA_RESTART;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_sigaction = usr1_handler;
+	if (sigaction(SIGUSR1, &sa, NULL) == -1)
+		goto fail;
 
 	opt_child = opt_on_mount = opt_add_perms = opt_fast = false;
 	opt_ignore_perm = true;
@@ -161,8 +176,9 @@ int main(int argc, char *argv[])
 	FD_ZERO(&rfds);
 	FD_SET(fan_fd, &rfds);
 
-	if (select(fan_fd+1, &rfds, NULL, NULL, NULL) < 0)
-		goto fail;
+	while (select(fan_fd+1, &rfds, NULL, NULL, NULL) < 0)
+		if (errno != EINTR)
+			goto fail;
 
 	while ((len = read(fan_fd, buf, sizeof(buf))) > 0) {
 		struct fanotify_event_metadata *metadata;
@@ -231,8 +247,9 @@ int main(int argc, char *argv[])
 				goto fail;
 			metadata = FAN_EVENT_NEXT(metadata, len);
 		}
-		if (select(fan_fd+1, &rfds, NULL, NULL, NULL) < 0)
-			goto fail;
+		while (select(fan_fd+1, &rfds, NULL, NULL, NULL) < 0)
+			if (errno != EINTR)
+				goto fail;
 	}
 	if (len < 0)
 		goto fail;
