@@ -18,7 +18,7 @@
 
 #include "fanotify-syscalllib.h"
 
-#define FANOTIFY_ARGUMENTS "cfhmnp"
+#define FANOTIFY_ARGUMENTS "cdfhmnp"
 
 int fan_fd;
 
@@ -79,6 +79,7 @@ void synopsis(const char *progname, int status)
 		"[-o {open,close,access,modify,open_perm,access_perm}] "
 		"file ...\n"
 		"-c: learn about events on children of a directory (not decendants)\n"
+		"-d: send events which happen to directories\n"
 		"-f: set premptive ignores (go faster)\n"
 		"-h: this help screen\n"
 		"-m: place mark on the whole mount point, not just the inode\n"
@@ -140,6 +141,8 @@ int main(int argc, char *argv[])
 			case 'c':
 				opt_child = true;
 				break;
+			case 'd':
+				fan_mask |= FAN_ONDIR;
 			case 'f':
 				opt_fast = true;
 				opt_ignore_perm = true;
