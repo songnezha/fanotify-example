@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
 			if (metadata->mask & FAN_CLOSE) {
 				if (metadata->mask & FAN_CLOSE_WRITE)
 					printf(" close(writable)");
-				else
+				if (metadata->mask & FAN_CLOSE_NOWRITE)
 					printf(" close");
 			}
 			if (metadata->mask & FAN_OPEN_PERM)
