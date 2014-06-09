@@ -142,6 +142,7 @@ int main(int argc, char *argv[])
 				opt_child = true;
 				break;
 			case 'd':
+				break;
 				fan_mask |= FAN_ONDIR;
 			case 'f':
 				opt_fast = true;
