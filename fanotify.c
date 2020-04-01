@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
 	else
 		init_flags |= FAN_CLASS_NOTIF;
 
-	fan_fd = fanotify_init(init_flags, O_RDONLY | O_LARGEFILE);
+	fan_fd = fanotify_init(init_flags | FAN_UNLIMITED_MARKS | FAN_UNLIMITED_QUEUE , O_RDONLY | O_LARGEFILE);
 	if (fan_fd < 0)
 		goto fail;
 
